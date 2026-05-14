@@ -1,0 +1,81 @@
+{% extends 'annotator/base.html' %}
+
+{% block title %}Dashboard - Game Annotator{% endblock %}
+
+{% block content %}
+<div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+    <!-- Header -->
+    <div class="mb-8">
+        <h1 class="text-4xl font-bold text-gray-900 mb-2">Your Projects</h1>
+        <p class="text-gray-600">Manage and annotate your board game video datasets</p>
+    </div>
+
+    <!-- Projects Grid -->
+    {% if projects %}
+    <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+        {% for project in projects %}
+        <div class="bg-white rounded-xl shadow-md hover-lift overflow-hidden border border-gray-200">
+            <div class="p-6">
+                <div class="flex items-start justify-between mb-4">
+                    <h3 class="text-xl font-bold text-gray-900 truncate flex-1">{{ project.name }}</h3>
+                    <span class="ml-2 px-3 py-1 bg-purple-100 text-purple-700 rounded-full text-xs font-semibold">
+                        {{ project.video_count }} video{% if project.video_count != 1 %}s{% endif %}
+                    </span>
+                </div>
+                
+                {% if project.description %}
+                <p class="text-gray-600 text-sm mb-4 line-clamp-2">{{ project.description }}</p>
+                {% endif %}
+                
+                <!-- Progress -->
+                <div class="mb-4">
+                    <div class="flex justify-between text-sm mb-1">
+                        <span class="text-gray-600">Progress</span>
+                        <span class="font-semibold text-gray-900">
+                            {{ project.completed_count }} / {{ project.video_count }}
+                        </span>
+                    </div>
+                    <div class="w-full bg-gray-200 rounded-full h-2">
+                        <div class="bg-gradient-to-r from-purple-500 to-purple-600 h-2 rounded-full" 
+                             style="width: {% if project.video_count > 0 %}{{ project.completed_count|floatformat:0|add:'0' }}{% widthratio project.completed_count project.video_count 100 %}{% else %}0{% endif %}%"></div>
+                    </div>
+                </div>
+                
+                <!-- Actions -->
+                <div class="flex space-x-2">
+                    <a href="{% url 'project_detail' project.id %}" 
+                       class="flex-1 px-4 py-2 bg-purple-600 text-white rounded-lg font-semibold hover:bg-purple-700 transition-colors text-center">
+                        Open Project
+                    </a>
+                    <a href="{% url 'project_edit' project.id %}" 
+                       class="px-4 py-2 bg-gray-100 text-gray-700 rounded-lg font-semibold hover:bg-gray-200 transition-colors">
+                        Edit
+                    </a>
+                </div>
+                
+                <div class="mt-3 text-xs text-gray-500">
+                    Created {{ project.created_at|date:"M d, Y" }}
+                </div>
+            </div>
+        </div>
+        {% endfor %}
+    </div>
+    {% else %}
+    <!-- Empty state -->
+    <div class="text-center py-16 bg-white rounded-xl shadow-md border border-gray-200">
+        <svg class="mx-auto h-16 w-16 text-gray-400 mb-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 21a4 4 0 01-4-4V5a2 2 0 012-2h4a2 2 0 012 2v12a4 4 0 01-4 4zm0 0h12a2 2 0 002-2v-4a2 2 0 00-2-2h-2.343M11 7.343l1.657-1.657a2 2 0 012.828 0l2.829 2.829a2 2 0 010 2.828l-8.486 8.485M7 17h.01"></path>
+        </svg>
+        <h3 class="text-xl font-semibold text-gray-900 mb-2">No projects yet</h3>
+        <p class="text-gray-600 mb-6">Create your first annotation project to get started</p>
+        <a href="{% url 'project_create' %}" 
+           class="inline-flex items-center px-6 py-3 bg-purple-600 text-white rounded-lg font-semibold hover:bg-purple-700 transition-colors shadow-md">
+            <svg class="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"></path>
+            </svg>
+            Create First Project
+        </a>
+    </div>
+    {% endif %}
+</div>
+{% endblock %}

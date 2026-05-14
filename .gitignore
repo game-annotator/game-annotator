@@ -1,0 +1,63 @@
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+env/
+venv/
+ENV/
+develop-eggs/
+dist/
+downloads/
+eggs/
+.eggs/
+lib/
+lib64/
+parts/
+sdist/
+var/
+wheels/
+*.egg-info/
+.installed.cfg
+*.egg
+
+# Django
+*.log
+local_settings.py
+/staticfiles
+/static
+
+# Sphinx generated docs (build artefacts)
+source/_build/
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# OS
+.DS_Store
+Thumbs.db
+desktop.ini
+
+# Environment
+.env
+.env.*
+.venv
+
+# Project-specific temp/export
+media/_tmp_export/
+
+# Office/Word documents (submission artefacts, not source code)
+*.docx
+*.doc
+*.xlsx
+*.pptx
+
+# Test coverage output
+htmlcov/
+.coverage.*
+

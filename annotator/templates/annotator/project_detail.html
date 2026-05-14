@@ -1,0 +1,206 @@
+{% extends 'annotator/base.html' %}
+
+{% block title %}{{ project.name }} - Game Annotator{% endblock %}
+
+{% block content %}
+<div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+    <!-- Project Header -->
+    <div class="mb-8">
+        <div class="flex items-start justify-between mb-4">
+            <div>
+                <div class="flex items-center mb-2">
+                    <a href="{% url 'dashboard' %}" class="text-purple-600 hover:text-purple-700 mr-2">
+                        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 19l-7-7m0 0l7-7m-7 7h18"></path>
+                        </svg>
+                    </a>
+                    <h1 class="text-4xl font-bold text-gray-900">{{ project.name }}</h1>
+                </div>
+                {% if project.description %}
+                <p class="text-gray-600">{{ project.description }}</p>
+                {% endif %}
+            </div>
+            <div class="flex items-center space-x-2">
+                <form method="post" action="{% url 'project_export_dataset' project.id %}" class="flex items-center space-x-1">
+                    {% csrf_token %}
+                    <select name="format"
+                            class="px-3 py-2 border border-gray-300 rounded-l-lg text-sm text-gray-700 bg-white focus:outline-none focus:ring-2 focus:ring-green-500">
+                        <option value="txt">TXT (sidecar)</option>
+                        <option value="csv">CSV</option>
+                        <option value="coco">COCO JSON</option>
+                    </select>
+                    <button type="submit"
+                            class="px-4 py-2 bg-green-600 text-white rounded-r-lg font-semibold hover:bg-green-700 transition-colors text-sm">
+                        ⬇ Export Dataset
+                    </button>
+                </form>
+                <a href="{% url 'project_edit' project.id %}" 
+                   class="px-4 py-2 bg-gray-100 text-gray-700 rounded-lg font-semibold hover:bg-gray-200 transition-colors">
+                    Edit Project
+                </a>
+            </div>
+        </div>
+        
+        <!-- Stats -->
+        <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+            <div class="bg-white rounded-lg shadow-md p-4 border border-gray-200">
+                <div class="text-sm text-gray-600 mb-1">Total Videos</div>
+                <div class="text-3xl font-bold text-gray-900">{{ videos|length }}</div>
+            </div>
+            <div class="bg-white rounded-lg shadow-md p-4 border border-gray-200">
+                <div class="text-sm text-gray-600 mb-1">Completed</div>
+                <div class="text-3xl font-bold text-green-600">
+                    {{ completed_count }}
+                </div>
+            </div>
+            <div class="bg-white rounded-lg shadow-md p-4 border border-gray-200">
+                <div class="text-sm text-gray-600 mb-1">In Progress</div>
+                <div class="text-3xl font-bold text-purple-600">
+                    {{ in_progress_count }}
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Upload Video Section -->
+    <div class="mb-8 bg-white rounded-xl shadow-md border border-gray-200 overflow-hidden">
+        <div class="px-6 py-4 border-b border-gray-200 bg-gray-50">
+            <h2 class="text-xl font-bold text-gray-900">Upload New Video</h2>
+        </div>
+        <form method="post" enctype="multipart/form-data" class="px-6 py-6">
+            {% csrf_token %}
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <div>
+                    <label class="block text-sm font-semibold text-gray-700 mb-2">Video Name</label>
+                    {{ form.name }}
+                    {% if form.name.errors %}
+                    <p class="mt-1 text-sm text-red-600">{{ form.name.errors.0 }}</p>
+                    {% endif %}
+                </div>
+                
+                <div>
+                    <label class="block text-sm font-semibold text-gray-700 mb-2">Video File</label>
+                    {{ form.video_file }}
+                    {% if form.video_file.errors %}
+                    <p class="mt-1 text-sm text-red-600">{{ form.video_file.errors.0 }}</p>
+                    {% endif %}
+                </div>
+                
+                <div>
+                    <label class="flex items-center space-x-2">
+                        {{ form.is_flipped }}
+                        <span class="text-sm font-semibold text-gray-700">Video needs rotation</span>
+                    </label>
+                </div>
+                
+                <div>
+                    <label class="block text-sm font-semibold text-gray-700 mb-2">Rotation Angle</label>
+                    {{ form.rotation_angle }}
+                </div>
+            </div>
+            
+            <div class="mt-6">
+                <button type="submit" 
+                        class="px-6 py-2 gradient-bg text-white rounded-lg font-semibold hover:opacity-90 transition-opacity shadow-md">
+                    Upload Video
+                </button>
+            </div>
+        </form>
+    </div>
+
+    <!-- Videos List -->
+    <div class="bg-white rounded-xl shadow-md border border-gray-200 overflow-hidden">
+        <div class="px-6 py-4 border-b border-gray-200 bg-gray-50">
+            <h2 class="text-xl font-bold text-gray-900">Videos</h2>
+        </div>
+        
+        {% if videos %}
+        <div class="divide-y divide-gray-200">
+            {% for video in videos %}
+            <div class="px-6 py-4 hover:bg-gray-50 transition-colors">
+                <div class="flex items-center justify-between">
+                    <div class="flex-1">
+                        <h3 class="text-lg font-semibold text-gray-900 mb-1">{{ video.name }}</h3>
+                        <div class="flex items-center space-x-4 text-sm text-gray-600">
+                            <span class="px-2 py-1 rounded-full text-xs font-semibold
+                                {% if video.status == 'completed' %}bg-green-100 text-green-700
+                                {% elif video.status == 'in_progress' %}bg-purple-100 text-purple-700
+                                {% elif video.status == 'ready' %}bg-blue-100 text-blue-700
+                                {% else %}bg-gray-100 text-gray-700{% endif %}">
+                                {{ video.get_status_display }}
+                            </span>
+                            {% if video.total_frames > 0 %}
+                            <span>{{ video.annotated_frames }} / {{ video.total_frames }} frames</span>
+                            <span>{{ video.get_progress_percentage }}%</span>
+                            {% endif %}
+                        </div>
+                        
+                        {% if video.total_frames > 0 %}
+                        <div class="mt-2 w-full bg-gray-200 rounded-full h-1.5">
+                            <div class="bg-purple-600 h-1.5 rounded-full" 
+                                 style="width: {{ video.get_progress_percentage }}%"></div>
+                        </div>
+                        {% endif %}
+                    </div>
+                    
+                    <div class="ml-6 flex space-x-2">
+                        {% if video.status == 'pending' or video.status == 'ready' %}
+                        <a href="{% url 'video_extract_frames' video.id %}" 
+                           class="px-4 py-2 bg-blue-600 text-white rounded-lg font-semibold hover:bg-blue-700 transition-colors text-sm">
+                            Extract Frames
+                        </a>
+                        {% endif %}
+                        
+                        {% if video.total_frames > 0 %}
+                        <a href="{% url 'video_annotate' video.id %}" 
+                           class="px-4 py-2 gradient-bg text-white rounded-lg font-semibold hover:opacity-90 transition-opacity text-sm">
+                            Annotate
+                        </a>
+                        {% endif %}
+                        
+                        {% if video.annotated_frames > 0 %}
+                        <div class="relative inline-block" x-data="{ open: false }">
+                            <button @click="open = !open"
+                                    class="px-4 py-2 bg-green-600 text-white rounded-lg font-semibold hover:bg-green-700 transition-colors text-sm flex items-center space-x-1">
+                                <span>Export</span>
+                                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"/>
+                                </svg>
+                            </button>
+                            <div x-show="open" @click.outside="open = false"
+                                 class="absolute right-0 mt-1 w-36 bg-white border border-gray-200 rounded-lg shadow-lg z-10">
+                                <a href="{% url 'video_export' video.id %}?format=json"
+                                   class="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-50">JSON</a>
+                                <a href="{% url 'video_export' video.id %}?format=csv"
+                                   class="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-50">CSV</a>
+                                <a href="{% url 'video_export' video.id %}?format=coco"
+                                   class="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-50">COCO JSON</a>
+                            </div>
+                        </div>
+                        {% endif %}
+
+                        <!-- Delete -->
+                        <form method="post" action="{% url 'video_delete' video.id %}" class="inline"
+                              onsubmit="return confirm('Delete &quot;{{ video.name }}&quot;?\n\nThis removes the video file and all extracted frames permanently.');">
+                            {% csrf_token %}
+                            <button type="submit"
+                                    class="px-4 py-2 bg-red-100 text-red-700 rounded-lg font-semibold hover:bg-red-200 transition-colors text-sm">
+                                Delete
+                            </button>
+                        </form>
+                    </div>
+                </div>
+            </div>
+            {% endfor %}
+        </div>
+        {% else %}
+        <div class="px-6 py-12 text-center text-gray-500">
+            <svg class="mx-auto h-12 w-12 text-gray-400 mb-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 10l4.553-2.276A1 1 0 0121 8.618v6.764a1 1 0 01-1.447.894L15 14M5 18h8a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v8a2 2 0 002 2z"></path>
+            </svg>
+            <p>No videos uploaded yet. Upload your first video above to get started.</p>
+        </div>
+        {% endif %}
+    </div>
+</div>
+{% endblock %}

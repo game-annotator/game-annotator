@@ -1,0 +1,12 @@
+[run]
+source = annotator
+omit =
+    annotator/migrations/*
+    annotator/tests.py
+
+[report]
+show_missing = True
+skip_covered = False
+
+[html]
+directory = htmlcov

@@ -1,0 +1,1076 @@
+{% extends 'annotator/base.html' %}
+
+{% block title %}Annotate - {{ video.name }}{% endblock %}
+
+{% block extra_css %}
+<style>
+    /* ── lock everything to viewport, zero scroll ── */
+    html, body { height: 100%; margin: 0; overflow: hidden; }
+    nav { height: 56px; flex-shrink: 0; }
+    footer { display: none; }
+    main  { display: block; height: calc(100vh - 56px); overflow: hidden; }
+
+    #annotate-root {
+        display: flex;
+        flex-direction: column;
+        height: 100%;   /* 100% of <main>, which is now viewport-constrained */
+        overflow: hidden;
+    }
+
+    /* ── top bar ── */
+    #top-bar {
+        height: 48px;
+        flex-shrink: 0;
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        padding: 0 16px;
+        background: #fff;
+        border-bottom: 1px solid #e5e7eb;
+    }
+
+    /* ── mode switcher ── */
+    #mode-switcher { display:flex; border:1px solid #e5e7eb; border-radius:6px; overflow:hidden; }
+    .mode-btn {
+        padding: 3px 9px; border:none; background:transparent;
+        color:#6b7280; font-size:12px; font-weight:600; cursor:pointer;
+        transition: background 0.1s, color 0.1s;
+    }
+    .mode-btn:hover:not(.active) { background:#f3f4f6; color:#374151; }
+    .mode-btn.active { background:#7c3aed; color:#fff; }
+    #ref-btn {
+        padding:3px 10px; border:1px solid #d1d5db; border-radius:6px;
+        background:#f9fafb; color:#374151; font-size:12px; font-weight:600;
+        cursor:pointer; display:none;
+    }
+    #ref-btn:hover { background:#ede9fe; border-color:#7c3aed; color:#7c3aed; }
+
+    /* ── pane-row base ── */
+    #pane-row {
+        flex: 1;
+        display: grid;
+        padding: 8px;
+        gap: 0;
+        overflow: hidden;
+        min-height: 0;
+    }
+
+    /* compare: ref | v-divider | current */
+    #pane-row[data-mode="compare"] { grid-template-columns: var(--cmp-split,50%) 6px 1fr; grid-template-rows:1fr; }
+    #pane-row[data-mode="compare"] #ref-pane     { display:flex; margin-right:3px; }
+    #pane-row[data-mode="compare"] #pane-divider { display:flex; }
+    #pane-row[data-mode="compare"] #cur-pane     { margin-left:3px; }
+    #pane-row[data-mode="compare"] #cur-body     { flex-direction:column; }
+    #pane-row[data-mode="compare"] #cur-img-section { flex:3; }
+    #pane-row[data-mode="compare"] #cur-ann-section { flex:2; }
+    #pane-row[data-mode="compare"] #cur-divider  { display:none; }
+
+    /* focus: full width, image left | v-divider | annotation right */
+    #pane-row[data-mode="focus"] { grid-template-columns:1fr; grid-template-rows:1fr; }
+    #pane-row[data-mode="focus"] #ref-pane     { display:none; }
+    #pane-row[data-mode="focus"] #pane-divider { display:none; }
+    #pane-row[data-mode="focus"] #cur-pane     { grid-column:1/-1; }
+    #pane-row[data-mode="focus"] #cur-body     { flex-direction:row; }
+    #pane-row[data-mode="focus"] #cur-img-section { flex:var(--focus-img,65); }
+    #pane-row[data-mode="focus"] #cur-divider  { display:flex; }
+    #pane-row[data-mode="focus"] #cur-ann-section { flex:var(--focus-ann,35); min-width:180px; }
+
+    /* immersive: full width, image top | h-divider | annotation bottom */
+    #pane-row[data-mode="immersive"] { grid-template-columns:1fr; grid-template-rows:1fr; }
+    #pane-row[data-mode="immersive"] #ref-pane     { display:none; }
+    #pane-row[data-mode="immersive"] #pane-divider { display:none; }
+    #pane-row[data-mode="immersive"] #cur-pane     { grid-column:1/-1; }
+    #pane-row[data-mode="immersive"] #cur-body     { flex-direction:column; }
+    #pane-row[data-mode="immersive"] #cur-img-section { flex:var(--imm-img,70); }
+    #pane-row[data-mode="immersive"] #cur-divider  { display:flex; }
+    #pane-row[data-mode="immersive"] #cur-ann-section { flex:var(--imm-ann,30); min-height:80px; }
+
+    /* ── draggable divider ── */
+    .divider {
+        background:#e5e7eb; flex-shrink:0; display:none;
+        align-items:center; justify-content:center;
+        position:relative; z-index:10; transition:background 0.15s;
+    }
+    .divider:hover, .divider.dragging { background:#7c3aed; }
+    .divider::after {
+        content:''; position:absolute;
+        background:rgba(255,255,255,0.7); border-radius:2px; pointer-events:none;
+    }
+    .divider-v { cursor:col-resize; width:6px; }
+    .divider-v::after { width:2px; height:28px; }
+    .divider-h { cursor:row-resize; height:6px; width:100%; }
+    .divider-h::after { height:2px; width:28px; }
+
+    /* ── cur-pane inner layout ── */
+    #cur-body {
+        flex:1; min-height:0; min-width:0; display:flex; overflow:hidden;
+    }
+    #cur-img-section {
+        min-height:0; min-width:0; overflow:hidden; display:flex; flex-direction:column;
+    }
+    #cur-img-section > .img-box { flex:1; }   /* fill the section */
+
+    /* ── reference thumbnail (focus/immersive only) ── */
+    #ref-thumb {
+        position: absolute;
+        bottom: 10px; left: 10px;
+        width: 110px;
+        background: #0f0f1a;
+        border: 2px solid rgba(124,58,237,0.6);
+        border-radius: 6px;
+        overflow: hidden;
+        cursor: zoom-in;
+        opacity: 0.85;
+        transition: opacity 0.2s, border-color 0.2s, transform 0.15s;
+        display: none;          /* hidden by default; shown per mode in JS */
+        flex-direction: column;
+        box-shadow: 0 4px 12px rgba(0,0,0,0.5);
+    }
+    #ref-thumb:hover {
+        opacity: 1;
+        border-color: #7c3aed;
+        transform: scale(1.04);
+    }
+    #ref-thumb img {
+        width: 100%;
+        height: 70px;
+        object-fit: cover;
+        display: block;
+    }
+    #ref-thumb-label {
+        font-size: 9px;
+        font-weight: 700;
+        color: rgba(255,255,255,0.7);
+        text-align: center;
+        padding: 2px 0 3px;
+        letter-spacing: 0.08em;
+        background: rgba(124,58,237,0.3);
+    }
+    /* hide in compare mode — full ref pane already visible */
+    #pane-row[data-mode="compare"] #ref-thumb { display: none !important; }
+
+    .pane {
+        background: #fff;
+        border: 1px solid #e5e7eb;
+        border-radius: 8px;
+        display: flex;
+        flex-direction: column;
+        overflow: hidden;
+        min-height: 0;
+    }
+
+    .pane-header {
+        height: 32px;
+        flex-shrink: 0;
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        padding: 0 10px;
+        font-size: 13px;
+        font-weight: 600;
+        color: #374151;
+        border-bottom: 1px solid #f3f4f6;
+        background: #fafafa;
+    }
+
+    /* ── image boxes: grow to fill pane, 60% of pane height ── */
+    .img-box {
+        flex: 3;
+        min-height: 0;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        background: #16182a;
+        overflow: hidden;
+        position: relative;
+    }
+    .img-box img {
+        max-width: 100%;
+        max-height: 100%;
+        object-fit: contain;
+    }
+    #cur-img { cursor: zoom-in; }
+    /* subtle zoom hint that appears on hover */
+    .img-box::after {
+        content: '🔍 Click to zoom';
+        position: absolute;
+        bottom: 6px; right: 8px;
+        font-size: 10px;
+        color: rgba(255,255,255,0.45);
+        pointer-events: none;
+        opacity: 0;
+        transition: opacity 0.2s;
+    }
+    .img-box:hover::after { opacity: 1; }
+
+    /* ── zoom overlay ── */
+    #zoom-overlay {
+        display: none;
+        position: fixed;
+        inset: 0;
+        z-index: 200;
+        background: rgba(0,0,0,0.88);
+        align-items: center;
+        justify-content: center;
+        overflow: hidden;
+    }
+    #zoom-overlay.open { display: flex; }
+    #zoom-overlay img {
+        position: absolute;
+        top: 50%; left: 50%;
+        transform-origin: center center;
+        transform: translate(-50%, -50%) scale(1);
+        max-width: none;
+        max-height: none;
+        cursor: grab;
+        user-select: none;
+        transition: transform 0.05s ease;
+    }
+    #zoom-overlay img.dragging { cursor: grabbing; transition: none; }
+    #zoom-controls {
+        position: fixed;
+        top: 12px; right: 16px;
+        display: flex; align-items: center; gap: 6px;
+        z-index: 201;
+    }
+    .zoom-btn {
+        width: 30px; height: 30px;
+        border-radius: 6px;
+        border: 1px solid rgba(255,255,255,0.2);
+        background: rgba(255,255,255,0.12);
+        color: #fff;
+        font-size: 16px; font-weight: 700;
+        cursor: pointer; line-height: 1;
+        display: flex; align-items: center; justify-content: center;
+    }
+    .zoom-btn:hover { background: rgba(255,255,255,0.22); }
+    #zoom-level-label {
+        color: #e5e7eb; font-size: 12px; font-weight: 600;
+        min-width: 38px; text-align: center;
+    }
+    #zoom-close-btn {
+        width: 30px; height: 30px;
+        border-radius: 6px;
+        border: 1px solid rgba(255,255,255,0.2);
+        background: rgba(220,38,38,0.5);
+        color: #fff; font-size: 18px; font-weight: 700;
+        cursor: pointer; line-height: 1;
+        display: flex; align-items: center; justify-content: center;
+        margin-left: 4px;
+    }
+    #zoom-close-btn:hover { background: rgba(220,38,38,0.8); }
+    #zoom-hint {
+        position: fixed; bottom: 12px; left: 50%;
+        transform: translateX(-50%);
+        color: rgba(255,255,255,0.45); font-size: 11px;
+        z-index: 201; pointer-events: none;
+    }
+
+    /* ── annotation text areas take remaining 40% ── */
+    .text-area-wrap {
+        flex: 2;
+        min-height: 80px;
+        display: flex;
+        flex-direction: column;
+        overflow: hidden;
+        padding: 6px 10px;
+    }
+    .text-area-wrap label {
+        font-size: 11px;
+        font-weight: 600;
+        color: #6b7280;
+        margin-bottom: 4px;
+        flex-shrink: 0;
+    }
+    /* stretchy container — textarea/pre are positioned inside it absolutely
+       so their content size never affects the flex layout */
+    .textarea-outer {
+        flex: 1;
+        min-height: 0;
+        position: relative;
+    }
+    .text-area-wrap textarea,
+    .text-area-wrap pre {
+        position: absolute;
+        inset: 0;
+        width: 100%;
+        height: 100%;
+        overflow: auto;
+        font-family: 'JetBrains Mono', monospace;
+        font-size: 12px;
+        line-height: 1.4;
+        color: #374151;
+        resize: none;
+    }
+    .text-area-wrap textarea {
+        border: 1px solid #d1d5db;
+        border-radius: 6px;
+        padding: 6px 8px;
+        outline: none;
+        background: #fff;
+    }
+    .text-area-wrap textarea:focus { border-color: #7c3aed; box-shadow: 0 0 0 2px rgba(124,58,237,0.15); }
+    .text-area-wrap pre {
+        background: #f9fafb;
+        border: 1px solid #e5e7eb;
+        border-radius: 6px;
+        padding: 6px 8px;
+        white-space: pre-wrap;
+        word-break: break-all;
+    }
+
+    /* ── bottom nav bar ── */
+    #nav-bar {
+        height: 76px;
+        flex-shrink: 0;
+        background: #fff;
+        border-top: 1px solid #e5e7eb;
+        display: flex;
+        flex-direction: column;
+        justify-content: center;
+        align-items: center;
+        gap: 6px;
+        padding: 0 16px;
+    }
+    #nav-bar .btn-row { display: flex; gap: 6px; flex-wrap: wrap; justify-content: center; }
+    #nav-bar button {
+        padding: 5px 12px;
+        border-radius: 6px;
+        border: 1px solid #d1d5db;
+        background: #fff;
+        font-size: 12px;
+        font-weight: 600;
+        color: #374151;
+        cursor: pointer;
+        transition: background 0.15s;
+    }
+    #nav-bar button:hover { background: #f3f4f6; }
+    #nav-bar button.primary { background: linear-gradient(135deg,#667eea,#764ba2); color:#fff; border:none; }
+    #nav-bar button.primary:hover { opacity:.88; }
+    #nav-bar button.blue { background:#eff6ff; color:#2563eb; border-color:#bfdbfe; }
+    #nav-bar button.blue:hover { background:#dbeafe; }
+
+    .kbd {
+        display:inline-block; padding:1px 5px; font-family:'JetBrains Mono',monospace;
+        font-size:10px; background:#1f2937; color:#f3f4f6; border-radius:3px;
+        border:1px solid #374151; margin-left:4px;
+    }
+    #shortcut-row { font-size: 11px; color:#9ca3af; display:flex; gap:12px; }
+
+    /* ── toast notification ── */
+    #toast {
+        position: fixed;
+        bottom: 90px;
+        left: 50%;
+        transform: translateX(-50%) translateY(20px);
+        padding: 8px 20px;
+        border-radius: 8px;
+        font-size: 13px;
+        font-weight: 600;
+        color: #fff;
+        opacity: 0;
+        pointer-events: none;
+        transition: opacity 0.2s ease, transform 0.2s ease;
+        z-index: 100;
+    }
+    #toast.show {
+        opacity: 1;
+        transform: translateX(-50%) translateY(0);
+    }
+    #toast.success { background: #16a34a; }
+    #toast.error   { background: #dc2626; }
+
+    /* ── annotation status badge ── */
+    .annotation-badge {
+        display: inline-flex;
+        align-items: center;
+        gap: 4px;
+        padding: 1px 7px;
+        border-radius: 999px;
+        font-size: 10px;
+        font-weight: 700;
+        letter-spacing: 0.02em;
+        margin-left: 6px;
+    }
+    .badge-saved     { background: #dcfce7; color: #15803d; }
+    .badge-inherited { background: #fef9c3; color: #92400e; }
+    .badge-template  { background: #f3f4f6; color: #6b7280; }
+</style>
+{% endblock %}
+
+{% block content %}
+<div id="annotate-root">
+
+    <!-- ── top bar ── -->
+    <div id="top-bar">
+        <div style="display:flex;align-items:center;gap:10px;">
+            <a href="{% url 'project_detail' project.id %}" style="color:#7c3aed;">
+                <svg width="18" height="18" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 19l-7-7m0 0l7-7m-7 7h18"/></svg>
+            </a>
+            <span style="font-weight:700;font-size:14px;color:#111;">{{ video.name }}</span>
+            <span style="font-size:12px;color:#9ca3af;">— {{ project.name }}</span>
+        </div>
+        <div style="display:flex;align-items:center;gap:10px;">
+            <!-- layout mode switcher -->
+            <div id="mode-switcher">
+                <button class="mode-btn active" data-mode="compare" title="Compare: reference + current (drag to resize)">⊞ Compare</button>
+                <button class="mode-btn" data-mode="focus"   title="Focus: image left, annotation right (drag to resize)">▣ Focus</button>
+                <button class="mode-btn" data-mode="immersive" title="Immersive: image top, annotation bottom (drag to resize)">⬜ Immersive</button>
+            </div>
+            <button id="ref-btn" title="Show reference frame (R)">⊡ Ref</button>
+            <span style="font-size:13px;color:#6b7280;">
+                <span id="annotated-count">{{ annotated_count }}</span> / {{ total_frames }} annotated
+            </span>
+            <button id="toggle-view-btn" style="padding:4px 10px;border-radius:6px;border:1px solid #bfdbfe;background:#eff6ff;color:#2563eb;font-size:12px;font-weight:600;cursor:pointer;">
+                <span id="view-mode-text">Show Annotated Only</span>
+            </button>
+        </div>
+    </div>
+
+    <!-- ── two panes ── -->
+    <div id="pane-row" data-mode="compare">
+        <!-- LEFT: reference -->
+        <div class="pane" id="ref-pane">
+            <div class="pane-header" {% if not last_annotated %}style="opacity:0.45;"{% endif %}>
+                <span>Last Annotated</span>
+                <span style="display:flex;align-items:center;gap:8px;">
+                    <span id="ref-frame-label" style="color:#9ca3af;font-weight:400;">{% if last_annotated %}Frame {{ last_annotated.frame_number }}{% endif %}</span>
+                    <button id="open-zoom-ref-btn" title="Zoom reference image"
+                            {% if not last_annotated %}style="display:none;"{% else %}style="padding:2px 8px;border-radius:4px;border:1px solid #d1d5db;background:#f9fafb;font-size:11px;font-weight:600;color:#374151;cursor:pointer;"{% endif %}>&#128269; Zoom</button>
+                </span>
+            </div>
+            <div class="img-box" id="ref-img-box" {% if last_annotated %}style="cursor:zoom-in;"{% endif %}>
+                {% if last_annotated %}
+                <img src="{{ last_annotated.image_path }}" alt="ref">
+                {% else %}
+                <span style="color:#6b7280;font-size:12px;opacity:0.6;">No previous annotation</span>
+                {% endif %}
+            </div>
+            <div class="text-area-wrap">
+                <label style="display:flex;align-items:center;justify-content:space-between;">
+                    <span>Previous Annotation</span>
+                    <span style="display:flex;align-items:center;gap:4px;">
+                        <button id="ref-font-decrease-btn" title="Decrease font size" style="width:22px;height:22px;border:1px solid #d1d5db;border-radius:4px;background:#f9fafb;cursor:pointer;font-size:11px;font-weight:700;color:#374151;line-height:1;padding:0;">A-</button>
+                        <span id="ref-font-size-label" style="font-size:10px;color:#9ca3af;min-width:26px;text-align:center;">12px</span>
+                        <button id="ref-font-increase-btn" title="Increase font size" style="width:22px;height:22px;border:1px solid #d1d5db;border-radius:4px;background:#f9fafb;cursor:pointer;font-size:11px;font-weight:700;color:#374151;line-height:1;padding:0;">A+</button>
+                    </span>
+                </label>
+                <div class="textarea-outer">
+                    <pre id="ref-annotation">{% if last_annotated and last_annotated.annotation_data %}{{ last_annotated.annotation_data }}{% else %}—{% endif %}</pre>
+                </div>
+            </div>
+        </div>
+
+        <!-- vertical divider between ref and current (compare mode) -->
+        <div id="pane-divider" class="divider divider-v"></div>
+
+        <!-- RIGHT: current -->
+        <div class="pane" id="cur-pane">
+            <div class="pane-header">
+                <span>Current Frame</span>
+                <span style="display:flex;align-items:center;gap:8px;">
+                    <span id="cur-frame-label" style="color:#9ca3af;font-weight:400;">Frame {{ current_frame.frame_number }}</span>
+                    <button id="open-zoom-btn" title="Zoom image (Z)" style="padding:2px 8px;border-radius:4px;border:1px solid #d1d5db;background:#f9fafb;font-size:11px;font-weight:600;color:#374151;cursor:pointer;">&#128269; Zoom</button>
+                </span>
+            </div>
+            <!-- cur-body: direction controlled by mode CSS -->
+            <div id="cur-body">
+                <div id="cur-img-section">
+                    <div class="img-box">
+                        <img src="{{ current_frame.image_path }}" alt="current" id="cur-img">
+                        <!-- reference thumbnail — visible in focus/immersive modes only -->
+                        <div id="ref-thumb"
+                             data-has-ref="{% if last_annotated %}1{% else %}0{% endif %}"
+                             data-ref-frame="{% if last_annotated %}{{ last_annotated.frame_number }}{% endif %}"
+                             title="Click to zoom reference frame">
+                            <img id="ref-thumb-img" src="{% if last_annotated %}{{ last_annotated.image_path }}{% endif %}" alt="ref">
+                            <div id="ref-thumb-label">Ref</div>
+                        </div>
+                    </div>
+                </div>
+                <!-- divider between image and annotation (focus=vertical, immersive=horizontal) -->
+                <div id="cur-divider" class="divider divider-v"></div>
+                <div id="cur-ann-section" class="text-area-wrap">
+                    <label style="display:flex;align-items:center;justify-content:space-between;">
+                        <span style="display:flex;align-items:center;gap:0;">
+                            Annotation
+                            <span id="annotation-badge" class="annotation-badge badge-template">TEMPLATE</span>
+                        </span>
+                        <span style="display:flex;align-items:center;gap:4px;">
+                            <button id="font-decrease-btn" title="Decrease font size (Ctrl+-)" style="width:22px;height:22px;border:1px solid #d1d5db;border-radius:4px;background:#f9fafb;cursor:pointer;font-size:11px;font-weight:700;color:#374151;line-height:1;padding:0;">A-</button>
+                            <span id="font-size-label" style="font-size:10px;color:#9ca3af;min-width:26px;text-align:center;">12px</span>
+                            <button id="font-increase-btn" title="Increase font size (Ctrl+=)" style="width:22px;height:22px;border:1px solid #d1d5db;border-radius:4px;background:#f9fafb;cursor:pointer;font-size:11px;font-weight:700;color:#374151;line-height:1;padding:0;">A+</button>
+                        </span>
+                    </label>
+                    <div class="textarea-outer">
+                        <textarea id="annotation-textarea" spellcheck="false">{% if current_frame.annotation_data %}{{ current_frame.annotation_data }}{% else %}{{ project.initial_array }}{% endif %}</textarea>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- ── bottom nav ── -->
+    <div id="nav-bar">
+        <div class="btn-row">
+            <button id="prev-btn">← Prev <span class="kbd">←</span></button>
+            <button id="next-btn">Next → <span class="kbd">→</span></button>
+            <button id="save-btn" class="primary">Save <span class="kbd">Ctrl+S</span></button>
+            <button id="unmark-btn" style="background:#fef2f2;color:#dc2626;border-color:#fecaca;">Unmark <span class="kbd">Ctrl+U</span></button>
+            <button id="skip-5-btn" class="blue">+5 <span class="kbd">Ctrl+→</span></button>
+            <button id="skip-10-btn" class="blue">+10 <span class="kbd">Shift+→</span></button>
+            <button id="skip-custom-btn" class="blue">+N <span class="kbd">Ctrl+G</span></button>
+        </div>
+        <div id="shortcut-row">
+            <span><span class="kbd">←</span> Prev</span>
+            <span><span class="kbd">→</span> Next</span>
+            <span><span class="kbd">Ctrl+S</span> Save</span>
+            <span><span class="kbd">Ctrl+U</span> Unmark</span>
+            <span><span class="kbd">Ctrl+→</span> Skip 5</span>
+            <span><span class="kbd">Shift+→</span> Skip 10</span>
+            <span><span class="kbd">Ctrl+G</span> Skip N</span>
+            <span><span class="kbd">Ctrl+=</span> Font+</span>
+            <span><span class="kbd">Ctrl+-</span> Font-</span>
+            <span><span class="kbd">Z</span> Zoom</span>
+        </div>
+    </div>
+</div>
+
+<!-- zoom overlay -->
+<div id="zoom-overlay">
+    <img id="zoom-img" src="" alt="zoom">
+    <div id="zoom-controls">
+        <button class="zoom-btn" id="zoom-out-btn">−</button>
+        <span id="zoom-level-label">100%</span>
+        <button class="zoom-btn" id="zoom-in-btn">+</button>
+        <button id="zoom-close-btn" title="Close (Esc)">&#x2715;</button>
+    </div>
+    <div id="zoom-hint">Scroll to zoom &nbsp;·&nbsp; Drag to pan &nbsp;·&nbsp; Double-click to reset &nbsp;·&nbsp; Esc to close</div>
+</div>
+
+<!-- toast -->
+<div id="toast"></div>
+
+<!-- hidden state -->
+<input type="hidden" id="current-frame-id" value="{{ current_frame.id }}" data-annotated="{% if current_frame.annotation_data %}1{% else %}0{% endif %}">
+<input type="hidden" id="video-id" value="{{ video.id }}">
+<input type="hidden" id="initial-text" value="{{ project.initial_array }}">
+{% endblock %}
+
+{% block extra_js %}
+<script>
+(function(){
+    let currentFrameId = parseInt(document.getElementById('current-frame-id').value);
+    let currentFrameNumber = {{ current_frame.frame_number }};
+    let annotatedOnlyMode = false;
+    let annotatedFramesList = [];
+    let annotatedFramesIndex = -1;
+    const initialText = document.getElementById('initial-text').value;
+
+    // ── isDirty: tracks whether textarea has unsaved changes ──
+    let isDirty = false;
+    let toastTimer = null;
+
+    // ── toast ──
+    function showToast(msg, type) {
+        const t = document.getElementById('toast');
+        t.textContent = msg;
+        t.className = 'show ' + type;
+        clearTimeout(toastTimer);
+        toastTimer = setTimeout(() => { t.className = ''; }, 2500);
+    }
+
+    // ── annotation badge ──
+    function setBadge(state, refFrameNum) {
+        const badge = document.getElementById('annotation-badge');
+        if (state === 'saved') {
+            badge.className = 'annotation-badge badge-saved';
+            badge.textContent = '✓ SAVED';
+        } else if (state === 'inherited') {
+            badge.className = 'annotation-badge badge-inherited';
+            badge.textContent = `^ INHERITED FROM FRAME ${refFrameNum}`;
+        } else {
+            badge.className = 'annotation-badge badge-template';
+            badge.textContent = 'TEMPLATE';
+        }
+    }
+
+    // ── zoom overlay ──
+    (function() {
+        const overlay  = document.getElementById('zoom-overlay');
+        const zoomImg  = document.getElementById('zoom-img');
+        const levelLbl = document.getElementById('zoom-level-label');
+        const SCALE_MIN = 0.5, SCALE_MAX = 10, SCALE_STEP = 0.2;
+        let scale = 1, tx = 0, ty = 0;
+        let dragging = false, dragStartX = 0, dragStartY = 0, dragTX = 0, dragTY = 0;
+
+        function applyTransform() {
+            zoomImg.style.transform = `translate(calc(-50% + ${tx}px), calc(-50% + ${ty}px)) scale(${scale})`;
+            levelLbl.textContent = Math.round(scale * 100) + '%';
+        }
+
+        function resetView() { scale = 1; tx = 0; ty = 0; applyTransform(); }
+
+        function openZoom(src) {
+            zoomImg.src = src || document.getElementById('cur-img').src;
+            resetView();
+            overlay.classList.add('open');
+        }
+
+        function closeZoom() { overlay.classList.remove('open'); }
+
+        function zoomBy(delta) {
+            scale = Math.min(SCALE_MAX, Math.max(SCALE_MIN, scale + delta));
+            applyTransform();
+        }
+
+        function getRefImgSrc() {
+            const img = document.querySelector('#ref-img-box img');
+            return img ? img.src : null;
+        }
+
+        // open triggers — current frame
+        document.getElementById('cur-img').addEventListener('click', () => openZoom());
+        document.getElementById('open-zoom-btn').addEventListener('click', () => openZoom());
+
+        // open triggers — reference frame
+        document.getElementById('ref-img-box').addEventListener('click', (e) => {
+            if (e.target.tagName === 'IMG') openZoom(e.target.src);
+        });
+        document.getElementById('open-zoom-ref-btn').addEventListener('click', () => {
+            const src = getRefImgSrc();
+            if (src) openZoom(src);
+        });
+
+        // close triggers
+        document.getElementById('zoom-close-btn').addEventListener('click', closeZoom);
+        overlay.addEventListener('click', (e) => { if (e.target === overlay) closeZoom(); });
+
+        // +/- buttons
+        document.getElementById('zoom-in-btn').addEventListener('click',  (e) => { e.stopPropagation(); zoomBy(SCALE_STEP * 2); });
+        document.getElementById('zoom-out-btn').addEventListener('click', (e) => { e.stopPropagation(); zoomBy(-SCALE_STEP * 2); });
+
+        // scroll-to-zoom
+        overlay.addEventListener('wheel', (e) => {
+            e.preventDefault();
+            zoomBy(e.deltaY < 0 ? SCALE_STEP : -SCALE_STEP);
+        }, { passive: false });
+
+        // double-click to reset
+        zoomImg.addEventListener('dblclick', (e) => { e.stopPropagation(); resetView(); });
+
+        // drag-to-pan
+        zoomImg.addEventListener('mousedown', (e) => {
+            e.preventDefault();
+            dragging = true;
+            dragStartX = e.clientX; dragStartY = e.clientY;
+            dragTX = tx; dragTY = ty;
+            zoomImg.classList.add('dragging');
+        });
+        document.addEventListener('mousemove', (e) => {
+            if (!dragging) return;
+            tx = dragTX + (e.clientX - dragStartX);
+            ty = dragTY + (e.clientY - dragStartY);
+            applyTransform();
+        });
+        document.addEventListener('mouseup', () => {
+            if (!dragging) return;
+            dragging = false;
+            zoomImg.classList.remove('dragging');
+        });
+
+        // expose for external callers (Ref button, mode switching)
+        window._openZoom = openZoom;
+        window._updateZoomSrc = (src) => { if (overlay.classList.contains('open')) zoomImg.src = src; };
+
+        // Esc / Z keyboard
+        document.addEventListener('keydown', (e) => {
+            if (e.key === 'Escape' && overlay.classList.contains('open')) { closeZoom(); return; }
+            if (e.key === 'z' || e.key === 'Z') {
+                if (e.target.tagName === 'TEXTAREA') return;
+                if (!overlay.classList.contains('open')) openZoom();
+                else closeZoom();
+            }
+        });
+    })();
+
+    // ── font size (persisted in localStorage) ──
+    const FONT_MIN = 10, FONT_MAX = 32, FONT_STEP = 2;
+
+    function makeFontController(storageKey, elementId, labelId, decBtnId, incBtnId) {
+        let size = parseInt(localStorage.getItem(storageKey)) || 12;
+        function apply(newSize) {
+            size = Math.min(FONT_MAX, Math.max(FONT_MIN, newSize));
+            localStorage.setItem(storageKey, size);
+            document.getElementById(elementId).style.fontSize = size + 'px';
+            document.getElementById(labelId).textContent = size + 'px';
+            document.getElementById(decBtnId).disabled = size <= FONT_MIN;
+            document.getElementById(incBtnId).disabled = size >= FONT_MAX;
+        }
+        apply(size);
+        document.getElementById(incBtnId).onclick = () => apply(size + FONT_STEP);
+        document.getElementById(decBtnId).onclick = () => apply(size - FONT_STEP);
+        return { get: () => size, apply };
+    }
+
+    const curFont = makeFontController(
+        'annotator_font_size', 'annotation-textarea',
+        'font-size-label', 'font-decrease-btn', 'font-increase-btn'
+    );
+    const refFont = makeFontController(
+        'annotator_ref_font_size', 'ref-annotation',
+        'ref-font-size-label', 'ref-font-decrease-btn', 'ref-font-increase-btn'
+    );
+
+    // keep keyboard shortcuts pointing at the current-frame font controller
+    function applyFontSize(size) { curFont.apply(size); }
+    function getFontSize() { return curFont.get(); }
+
+    // ── mark dirty when user edits textarea ──
+    document.getElementById('annotation-textarea').addEventListener('input', () => {
+        isDirty = true;
+    });
+
+    // ── guard: confirm before navigating with unsaved changes ──
+    function confirmNavigate() {
+        if (!isDirty) return true;
+        return confirm('You have unsaved changes. Navigate anyway and lose them?');
+    }
+
+    function setRefThumb(frameNum, imgUrl) {
+        const thumb    = document.getElementById('ref-thumb');
+        const thumbImg = document.getElementById('ref-thumb-img');
+        const label    = document.getElementById('ref-thumb-label');
+        if (imgUrl) {
+            thumbImg.src      = imgUrl;
+            label.textContent = 'Ref · Frame ' + frameNum;
+            // show only when NOT in compare mode
+            const mode = document.getElementById('pane-row').dataset.mode;
+            thumb.style.display = mode !== 'compare' ? 'flex' : 'none';
+        } else {
+            thumb.style.display = 'none';
+        }
+    }
+
+    function setRefEmpty() {
+        document.getElementById('ref-frame-label').textContent = '';
+        document.getElementById('ref-img-box').style.cursor = 'default';
+        document.getElementById('ref-img-box').innerHTML =
+            `<span style="color:#6b7280;font-size:12px;opacity:0.6;">No previous annotation</span>`;
+        document.getElementById('ref-annotation').textContent = '—';
+        document.getElementById('open-zoom-ref-btn').style.display = 'none';
+        document.querySelector('#ref-pane .pane-header').style.opacity = '0.45';
+        setRefThumb(null, null);
+    }
+
+    function setRefPopulated(frameNum, imgUrl, annotation) {
+        document.getElementById('ref-frame-label').textContent = 'Frame ' + frameNum;
+        document.getElementById('ref-img-box').style.cursor = 'zoom-in';
+        document.getElementById('ref-img-box').innerHTML = `<img src="${imgUrl}" alt="ref">`;
+        document.getElementById('ref-annotation').textContent = annotation || '—';
+        document.getElementById('open-zoom-ref-btn').style.display = '';
+        document.querySelector('#ref-pane .pane-header').style.opacity = '1';
+        setRefThumb(frameNum, imgUrl);
+    }
+
+    async function loadFrame(frameId) {
+        const res  = await fetch(`/frame/${frameId}/data/`);
+        const data = await res.json();
+
+        currentFrameId     = data.id;
+        currentFrameNumber = data.frame_number;
+        document.getElementById('current-frame-id').value = data.id;
+        document.getElementById('cur-frame-label').textContent = 'Frame ' + data.frame_number;
+        document.getElementById('cur-img').src = data.image_url;
+        if (window._updateZoomSrc) window._updateZoomSrc(data.image_url);
+
+        let annotationToLoad = '';
+        let badgeState = 'template';
+        let badgeRef   = null;
+
+        // CASE 1: frame already annotated
+        if (data.annotation && data.annotation.trim() !== '') {
+            annotationToLoad = data.annotation;
+            badgeState = 'saved';
+
+            if (data.previous_annotated_id) {
+                const refRes  = await fetch(`/frame/${data.previous_annotated_id}/data/`);
+                const refData = await refRes.json();
+                setRefPopulated(refData.frame_number, refData.image_url, refData.annotation);
+            } else {
+                setRefEmpty();
+            }
+
+        // CASE 2: inherit from previous annotated frame
+        } else if (data.previous_annotated_id) {
+            const refRes  = await fetch(`/frame/${data.previous_annotated_id}/data/`);
+            const refData = await refRes.json();
+
+            annotationToLoad = refData.annotation || initialText;
+            badgeState = 'inherited';
+            badgeRef   = refData.frame_number;
+
+            setRefPopulated(refData.frame_number, refData.image_url, refData.annotation);
+
+        // CASE 3: nothing — use template
+        } else {
+            annotationToLoad = initialText;
+            setRefEmpty();
+        }
+
+        document.getElementById('annotation-textarea').value = annotationToLoad;
+        setBadge(badgeState, badgeRef);
+        isDirty = false;   // fresh load — nothing unsaved yet
+    }
+
+    // ── save ──
+    async function saveAnnotation() {
+        const text = document.getElementById('annotation-textarea').value;
+        const res  = await fetch(`/frame/${currentFrameId}/save/`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json', 'X-CSRFToken': getCookie('csrftoken') },
+            body: JSON.stringify({ annotation: text })
+        });
+        const data = await res.json();
+        if (data.success) {
+            isDirty = false;
+            setBadge('saved');
+            document.getElementById('annotated-count').textContent = data.annotated_count;
+            showToast('Saved!', 'success');
+            setRefPopulated(currentFrameNumber, document.getElementById('cur-img').src, text);
+            navigateFrame('next');
+        } else {
+            showToast('Save failed — try again', 'error');
+        }
+    }
+
+    // ── unmark ──
+    async function unmarkAnnotation() {
+        const res  = await fetch(`/frame/${currentFrameId}/unmark/`, {
+            method: 'POST',
+            headers: { 'X-CSRFToken': getCookie('csrftoken') }
+        });
+        const data = await res.json();
+        if (data.success) {
+            document.getElementById('annotated-count').textContent = data.annotated_count;
+            showToast('Annotation removed', 'success');
+            await loadFrame(currentFrameId);
+        }
+    }
+
+    // ── navigate ──
+    async function navigateFrame(direction) {
+        if (direction !== 'next' && !confirmNavigate()) return;
+
+        if (annotatedOnlyMode && annotatedFramesList.length) {
+            let idx = annotatedFramesIndex;
+            if (direction === 'next' || direction === 'skip_1')  idx++;
+            else if (direction === 'previous') idx--;
+            else idx = 0;
+            idx = Math.max(0, Math.min(idx, annotatedFramesList.length - 1));
+            annotatedFramesIndex = idx;
+            await loadFrame(annotatedFramesList[idx]);
+            return;
+        }
+
+        const res  = await fetch(`/frame/${currentFrameId}/navigate/${direction}/`);
+        if (!res.ok) return;
+        const data = await res.json();
+        if (data.frame_id) await loadFrame(data.frame_id);
+    }
+
+    // ── annotated-only toggle ──
+    async function toggleAnnotatedView() {
+        if (annotatedOnlyMode) {
+            annotatedOnlyMode = false;
+            annotatedFramesList = [];
+            annotatedFramesIndex = -1;
+            const btn = document.getElementById('toggle-view-btn');
+            btn.style.background = '#eff6ff'; btn.style.color = '#2563eb'; btn.style.borderColor = '#bfdbfe';
+            document.getElementById('view-mode-text').textContent = 'Show Annotated Only';
+        } else {
+            const res  = await fetch(`/video/${document.getElementById('video-id').value}/annotated-frames/`);
+            const data = await res.json();
+            annotatedFramesList  = data.frames.map(f => f.id);
+            annotatedFramesIndex = 0;
+            annotatedOnlyMode    = true;
+            const btn = document.getElementById('toggle-view-btn');
+            btn.style.background = '#dcfce7'; btn.style.color = '#16a34a'; btn.style.borderColor = '#86efac';
+            document.getElementById('view-mode-text').textContent = 'Show All Frames';
+            if (annotatedFramesList.length) await loadFrame(annotatedFramesList[0]);
+        }
+    }
+
+    function getCookie(name) {
+        const m = document.cookie.match(new RegExp('(^| )' + name + '=([^;]+)'));
+        return m ? decodeURIComponent(m[2]) : null;
+    }
+
+    // ── set initial badge from data attribute (avoids Django tags inside JS) ──
+    (function initBadge() {
+        const isAnnotated = document.getElementById('current-frame-id').dataset.annotated === '1';
+        setBadge(isAnnotated ? 'saved' : 'template');
+    })();
+
+    // ── wiring ──
+    document.getElementById('save-btn').onclick    = saveAnnotation;
+    document.getElementById('unmark-btn').onclick  = unmarkAnnotation;
+    document.getElementById('prev-btn').onclick    = () => navigateFrame('previous');
+    document.getElementById('next-btn').onclick    = () => navigateFrame('next');
+    document.getElementById('skip-5-btn').onclick  = () => navigateFrame('skip_5');
+    document.getElementById('skip-10-btn').onclick = () => navigateFrame('skip_10');
+    document.getElementById('toggle-view-btn').onclick = toggleAnnotatedView;
+    document.getElementById('skip-custom-btn').onclick = () => {
+        const n = prompt('Skip how many frames?', '20');
+        const amount = Math.min(Math.max(parseInt(n), 1), 10000);
+        if (!isNaN(amount)) navigateFrame('skip_' + amount);
+    };
+
+    document.addEventListener('keydown', (e) => {
+        if ((e.ctrlKey || e.metaKey) && e.key === 's') { e.preventDefault(); saveAnnotation(); return; }
+        if ((e.ctrlKey || e.metaKey) && e.key === 'u') { e.preventDefault(); unmarkAnnotation(); return; }
+        if ((e.ctrlKey || e.metaKey) && e.key === 'g') { e.preventDefault(); document.getElementById('skip-custom-btn').click(); return; }
+        if ((e.ctrlKey || e.metaKey) && (e.key === '=' || e.key === '+')) { e.preventDefault(); applyFontSize(getFontSize() + FONT_STEP); return; }
+        if ((e.ctrlKey || e.metaKey) && e.key === '-') { e.preventDefault(); applyFontSize(getFontSize() - FONT_STEP); return; }
+        if (e.target.tagName === 'TEXTAREA') return;
+        if (e.key === 'ArrowLeft')                              { e.preventDefault(); navigateFrame('previous'); }
+        else if (e.key === 'ArrowRight' && e.ctrlKey)           { e.preventDefault(); navigateFrame('skip_5'); }
+        else if (e.key === 'ArrowRight' && e.shiftKey)          { e.preventDefault(); navigateFrame('skip_10'); }
+        else if (e.key === 'ArrowRight')                        { e.preventDefault(); navigateFrame('next'); }
+        // R key: open reference in zoom overlay (focus/immersive modes)
+        if ((e.key === 'r' || e.key === 'R') && e.target.tagName !== 'TEXTAREA') {
+            const src = getRefImgSrc();
+            if (src && window._openZoom) window._openZoom(src);
+        }
+    });
+})();
+
+// ── layout modes + drag-to-resize ──
+(function () {
+    const root     = document.documentElement;
+    const paneRow  = document.getElementById('pane-row');
+    const paneDiv  = document.getElementById('pane-divider');
+    const curDiv   = document.getElementById('cur-divider');
+    const refBtn   = document.getElementById('ref-btn');
+
+    // persisted values
+    let cmpPct   = parseFloat(localStorage.getItem('ann_cmp'))   || 50;
+    let focusPct = parseFloat(localStorage.getItem('ann_focus'))  || 65;
+    let immPct   = parseFloat(localStorage.getItem('ann_imm'))    || 70;
+
+    function applyCSSVars() {
+        root.style.setProperty('--cmp-split',  cmpPct + '%');
+        root.style.setProperty('--focus-img',  focusPct);
+        root.style.setProperty('--focus-ann',  100 - focusPct);
+        root.style.setProperty('--imm-img',    immPct);
+        root.style.setProperty('--imm-ann',    100 - immPct);
+    }
+
+    function setMode(mode) {
+        paneRow.dataset.mode = mode;
+        localStorage.setItem('ann_mode', mode);
+        document.querySelectorAll('.mode-btn').forEach(b =>
+            b.classList.toggle('active', b.dataset.mode === mode)
+        );
+        refBtn.style.display = mode !== 'compare' ? '' : 'none';
+        // cur-divider orientation changes per mode
+        curDiv.className = 'divider ' + (mode === 'focus' ? 'divider-v' : 'divider-h');
+    }
+
+    // restore saved mode + ratios
+    applyCSSVars();
+    setMode(localStorage.getItem('ann_mode') || 'compare');
+
+    // init thumbnail from server-rendered data attributes (avoids Django tags in JS)
+    (function() {
+        const thumb    = document.getElementById('ref-thumb');
+        const thumbImg = document.getElementById('ref-thumb-img');
+        const label    = document.getElementById('ref-thumb-label');
+        if (thumb.dataset.hasRef === '1') {
+            label.textContent = 'Ref · Frame ' + thumb.dataset.refFrame;
+            thumb.style.display = paneRow.dataset.mode !== 'compare' ? 'flex' : 'none';
+        } else {
+            thumbImg.removeAttribute('src');   // no broken-image icon
+            thumb.style.display = 'none';
+        }
+    })();
+
+    // ref thumbnail click → zoom overlay
+    document.getElementById('ref-thumb').addEventListener('click', () => {
+        const src = document.getElementById('ref-thumb-img').src;
+        if (src && window._openZoom) window._openZoom(src);
+    });
+
+    // mode buttons — also update thumbnail visibility on switch
+    document.querySelectorAll('.mode-btn').forEach(btn =>
+        btn.addEventListener('click', () => {
+            setMode(btn.dataset.mode);
+            // re-sync thumbnail: show in focus/immersive if ref exists
+            const thumbImg = document.getElementById('ref-thumb-img');
+            const thumb    = document.getElementById('ref-thumb');
+            if (thumbImg.src && !thumbImg.src.endsWith('/')) {
+                thumb.style.display = btn.dataset.mode !== 'compare' ? 'flex' : 'none';
+            }
+        })
+    );
+
+    // Ref button opens last-annotated in zoom overlay
+    refBtn.addEventListener('click', () => {
+        const src = document.querySelector('#ref-img-box img');
+        if (src && window._openZoom) window._openZoom(src.src);
+    });
+
+    // ── generic drag helper ──
+    function makeDraggable(handle, onMove, onDone) {
+        handle.addEventListener('mousedown', e => {
+            e.preventDefault();
+            handle.classList.add('dragging');
+            document.body.style.userSelect = 'none';
+            const mv = e2 => onMove(e2);
+            const up = () => {
+                handle.classList.remove('dragging');
+                document.body.style.userSelect = '';
+                document.removeEventListener('mousemove', mv);
+                document.removeEventListener('mouseup',  up);
+                onDone();
+            };
+            document.addEventListener('mousemove', mv);
+            document.addEventListener('mouseup',   up);
+        });
+    }
+
+    // pane-divider: horizontal split in compare mode
+    makeDraggable(paneDiv,
+        e => {
+            const r = paneRow.getBoundingClientRect();
+            cmpPct = Math.min(75, Math.max(25, (e.clientX - r.left) / r.width * 100));
+            root.style.setProperty('--cmp-split', cmpPct + '%');
+        },
+        () => localStorage.setItem('ann_cmp', cmpPct)
+    );
+
+    // cur-divider: vertical (focus) or horizontal (immersive)
+    makeDraggable(curDiv,
+        e => {
+            const mode = paneRow.dataset.mode;
+            const body = document.getElementById('cur-body');
+            const r    = body.getBoundingClientRect();
+            if (mode === 'focus') {
+                focusPct = Math.min(85, Math.max(15, (e.clientX - r.left)  / r.width  * 100));
+                root.style.setProperty('--focus-img', focusPct);
+                root.style.setProperty('--focus-ann', 100 - focusPct);
+            } else {
+                immPct = Math.min(90, Math.max(10, (e.clientY - r.top) / r.height * 100));
+                root.style.setProperty('--imm-img', immPct);
+                root.style.setProperty('--imm-ann', 100 - immPct);
+            }
+        },
+        () => {
+            const mode = paneRow.dataset.mode;
+            localStorage.setItem(mode === 'focus' ? 'ann_focus' : 'ann_imm',
+                                 mode === 'focus' ? focusPct    : immPct);
+        }
+    );
+}());
+</script>
+{% endblock %}

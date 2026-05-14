@@ -1,0 +1,34 @@
+name: Docs
+
+on:
+  push:
+    branches: [main]
+
+permissions:
+  contents: write
+
+jobs:
+  build-and-deploy:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      - name: Install dependencies
+        run: pip install -r requirements.txt sphinx sphinx-rtd-theme
+
+      - name: Build Sphinx docs
+        env:
+          SECRET_KEY: github-actions-dummy-key
+          DEBUG: "False"
+          ALLOWED_HOSTS: "localhost"
+        run: python -m sphinx source build/html -b html -W
+
+      - name: Deploy to GitHub Pages
+        uses: peaceiris/actions-gh-pages@v4
+        with:
+          github_token: ${{ secrets.GITHUB_TOKEN }}
+          publish_dir: build/html
