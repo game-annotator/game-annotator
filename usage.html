@@ -1,0 +1,337 @@
+
+
+<!DOCTYPE html>
+<html class="writer-html5" lang="en" data-content_root="./">
+<head>
+  <meta charset="utf-8" /><meta name="viewport" content="width=device-width, initial-scale=1" />
+
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Usage Guide &mdash; GameAnnotator 1.0.0 documentation</title>
+      <link rel="stylesheet" type="text/css" href="_static/pygments.css?v=b86133f3" />
+      <link rel="stylesheet" type="text/css" href="_static/css/theme.css?v=9edc463e" />
+
+  
+      <script src="_static/jquery.js?v=5d32c60e"></script>
+      <script src="_static/_sphinx_javascript_frameworks_compat.js?v=2cd50e6c"></script>
+      <script src="_static/documentation_options.js?v=8d563738"></script>
+      <script src="_static/doctools.js?v=fd6eb6e6"></script>
+      <script src="_static/sphinx_highlight.js?v=6ffebe34"></script>
+    <script src="_static/js/theme.js"></script>
+    <link rel="index" title="Index" href="genindex.html" />
+    <link rel="search" title="Search" href="search.html" />
+    <link rel="next" title="API Reference" href="api.html" />
+    <link rel="prev" title="Installation" href="installation.html" /> 
+</head>
+
+<body class="wy-body-for-nav"> 
+  <div class="wy-grid-for-nav">
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+
+          
+          
+          <a href="index.html" class="icon icon-home">
+            GameAnnotator
+          </a>
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" aria-label="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+        </div><div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
+              <p class="caption" role="heading"><span class="caption-text">Contents</span></p>
+<ul class="current">
+<li class="toctree-l1"><a class="reference internal" href="installation.html">Installation</a></li>
+<li class="toctree-l1 current"><a class="current reference internal" href="#">Usage Guide</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="#annotation-workflow">Annotation Workflow</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#step-1-create-a-project">Step 1 — Create a Project</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#step-2-upload-a-video">Step 2 — Upload a Video</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#step-3-extract-frames">Step 3 — Extract Frames</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#step-4-annotate">Step 4 — Annotate</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="#layout-modes">Layout Modes</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#adjustable-features">Adjustable Features</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#keyboard-shortcuts">Keyboard Shortcuts</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#annotated-only-view">Annotated-Only View</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="#step-5-export">Step 5 — Export</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="#per-video-export">Per-video export</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#full-project-export-zip">Full project export (ZIP)</a></li>
+</ul>
+</li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="api.html">API Reference</a></li>
+</ul>
+
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap"><nav class="wy-nav-top" aria-label="Mobile navigation menu" >
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="index.html">GameAnnotator</a>
+      </nav>
+
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          <div role="navigation" aria-label="Page navigation">
+  <ul class="wy-breadcrumbs">
+      <li><a href="index.html" class="icon icon-home" aria-label="Home"></a></li>
+      <li class="breadcrumb-item active">Usage Guide</li>
+      <li class="wy-breadcrumbs-aside">
+            <a href="_sources/usage.rst.txt" rel="nofollow"> View page source</a>
+      </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+             
+  <section id="usage-guide">
+<h1>Usage Guide<a class="headerlink" href="#usage-guide" title="Link to this heading"></a></h1>
+<section id="annotation-workflow">
+<h2>Annotation Workflow<a class="headerlink" href="#annotation-workflow" title="Link to this heading"></a></h2>
+<p>The typical workflow is:</p>
+<div class="highlight-text notranslate"><div class="highlight"><pre><span></span>1. Create a project
+2. Upload one or more videos
+3. Extract frames
+4. Annotate each frame
+5. Export the dataset
+</pre></div>
+</div>
+</section>
+<section id="step-1-create-a-project">
+<h2>Step 1 — Create a Project<a class="headerlink" href="#step-1-create-a-project" title="Link to this heading"></a></h2>
+<p>Click <strong>+ New Project</strong> on the dashboard. Fill in:</p>
+<ul class="simple">
+<li><p><strong>Name</strong> — unique identifier for the project</p></li>
+<li><p><strong>Description</strong> — optional free-text description</p></li>
+<li><p><strong>Initial Game State</strong> — template annotation pre-filled into every new frame
+so you only need to edit what changed. <strong>Any text format works</strong> — JSON,
+plain text, FEN notation, CSV, or any custom scheme your project uses.</p></li>
+</ul>
+<p>Example initial state for chess (JSON — but not required):</p>
+<div class="highlight-json notranslate"><div class="highlight"><pre><span></span><span class="p">{</span>
+<span class="w">  </span><span class="nt">&quot;board&quot;</span><span class="p">:</span><span class="w"> </span><span class="p">[</span>
+<span class="w">    </span><span class="p">[</span><span class="s2">&quot;r&quot;</span><span class="p">,</span><span class="s2">&quot;n&quot;</span><span class="p">,</span><span class="s2">&quot;b&quot;</span><span class="p">,</span><span class="s2">&quot;q&quot;</span><span class="p">,</span><span class="s2">&quot;k&quot;</span><span class="p">,</span><span class="s2">&quot;b&quot;</span><span class="p">,</span><span class="s2">&quot;n&quot;</span><span class="p">,</span><span class="s2">&quot;r&quot;</span><span class="p">],</span>
+<span class="w">    </span><span class="p">[</span><span class="s2">&quot;p&quot;</span><span class="p">,</span><span class="s2">&quot;p&quot;</span><span class="p">,</span><span class="s2">&quot;p&quot;</span><span class="p">,</span><span class="s2">&quot;p&quot;</span><span class="p">,</span><span class="s2">&quot;p&quot;</span><span class="p">,</span><span class="s2">&quot;p&quot;</span><span class="p">,</span><span class="s2">&quot;p&quot;</span><span class="p">,</span><span class="s2">&quot;p&quot;</span><span class="p">],</span>
+<span class="w">    </span><span class="p">[</span><span class="s2">&quot; &quot;</span><span class="p">,</span><span class="s2">&quot; &quot;</span><span class="p">,</span><span class="s2">&quot; &quot;</span><span class="p">,</span><span class="s2">&quot; &quot;</span><span class="p">,</span><span class="s2">&quot; &quot;</span><span class="p">,</span><span class="s2">&quot; &quot;</span><span class="p">,</span><span class="s2">&quot; &quot;</span><span class="p">,</span><span class="s2">&quot; &quot;</span><span class="p">],</span>
+<span class="w">    </span><span class="p">[</span><span class="s2">&quot; &quot;</span><span class="p">,</span><span class="s2">&quot; &quot;</span><span class="p">,</span><span class="s2">&quot; &quot;</span><span class="p">,</span><span class="s2">&quot; &quot;</span><span class="p">,</span><span class="s2">&quot; &quot;</span><span class="p">,</span><span class="s2">&quot; &quot;</span><span class="p">,</span><span class="s2">&quot; &quot;</span><span class="p">,</span><span class="s2">&quot; &quot;</span><span class="p">],</span>
+<span class="w">    </span><span class="p">[</span><span class="s2">&quot; &quot;</span><span class="p">,</span><span class="s2">&quot; &quot;</span><span class="p">,</span><span class="s2">&quot; &quot;</span><span class="p">,</span><span class="s2">&quot; &quot;</span><span class="p">,</span><span class="s2">&quot; &quot;</span><span class="p">,</span><span class="s2">&quot; &quot;</span><span class="p">,</span><span class="s2">&quot; &quot;</span><span class="p">,</span><span class="s2">&quot; &quot;</span><span class="p">],</span>
+<span class="w">    </span><span class="p">[</span><span class="s2">&quot; &quot;</span><span class="p">,</span><span class="s2">&quot; &quot;</span><span class="p">,</span><span class="s2">&quot; &quot;</span><span class="p">,</span><span class="s2">&quot; &quot;</span><span class="p">,</span><span class="s2">&quot; &quot;</span><span class="p">,</span><span class="s2">&quot; &quot;</span><span class="p">,</span><span class="s2">&quot; &quot;</span><span class="p">,</span><span class="s2">&quot; &quot;</span><span class="p">],</span>
+<span class="w">    </span><span class="p">[</span><span class="s2">&quot;P&quot;</span><span class="p">,</span><span class="s2">&quot;P&quot;</span><span class="p">,</span><span class="s2">&quot;P&quot;</span><span class="p">,</span><span class="s2">&quot;P&quot;</span><span class="p">,</span><span class="s2">&quot;P&quot;</span><span class="p">,</span><span class="s2">&quot;P&quot;</span><span class="p">,</span><span class="s2">&quot;P&quot;</span><span class="p">,</span><span class="s2">&quot;P&quot;</span><span class="p">],</span>
+<span class="w">    </span><span class="p">[</span><span class="s2">&quot;R&quot;</span><span class="p">,</span><span class="s2">&quot;N&quot;</span><span class="p">,</span><span class="s2">&quot;B&quot;</span><span class="p">,</span><span class="s2">&quot;Q&quot;</span><span class="p">,</span><span class="s2">&quot;K&quot;</span><span class="p">,</span><span class="s2">&quot;B&quot;</span><span class="p">,</span><span class="s2">&quot;N&quot;</span><span class="p">,</span><span class="s2">&quot;R&quot;</span><span class="p">]</span>
+<span class="w">  </span><span class="p">],</span>
+<span class="w">  </span><span class="nt">&quot;turn&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;white&quot;</span>
+<span class="p">}</span>
+</pre></div>
+</div>
+</section>
+<section id="step-2-upload-a-video">
+<h2>Step 2 — Upload a Video<a class="headerlink" href="#step-2-upload-a-video" title="Link to this heading"></a></h2>
+<p>From the project detail page, use the upload form. Supported formats:
+<code class="docutils literal notranslate"><span class="pre">mp4</span></code>, <code class="docutils literal notranslate"><span class="pre">avi</span></code>, <code class="docutils literal notranslate"><span class="pre">mov</span></code>, <code class="docutils literal notranslate"><span class="pre">mkv</span></code>, <code class="docutils literal notranslate"><span class="pre">webm</span></code>.</p>
+<p>If the video was recorded on a mobile device and is rotated, check
+<strong>Video needs rotation</strong> and set the <strong>Rotation Angle</strong>.</p>
+</section>
+<section id="step-3-extract-frames">
+<h2>Step 3 — Extract Frames<a class="headerlink" href="#step-3-extract-frames" title="Link to this heading"></a></h2>
+<p>Click <strong>Extract Frames</strong> on the video row. Three algorithms are available:</p>
+<table class="docutils align-default">
+<thead>
+<tr class="row-odd"><th class="head"><p>Algorithm</p></th>
+<th class="head"><p>Description</p></th>
+</tr>
+</thead>
+<tbody>
+<tr class="row-even"><td><p><strong>Full</strong></p></td>
+<td><p>Extracts every N-th frame to achieve the target FPS.
+Use for dense annotation of fast-changing games.</p></td>
+</tr>
+<tr class="row-odd"><td><p><strong>Uniform</strong></p></td>
+<td><p>Picks exactly <em>N</em> frames evenly spaced across the video.
+Good for capturing representative states.</p></td>
+</tr>
+<tr class="row-even"><td><p><strong>Random Sampling</strong></p></td>
+<td><p>Picks exactly <em>N</em> frames at random positions.
+Useful for creating varied training sets.</p></td>
+</tr>
+</tbody>
+</table>
+<p>You can also restrict extraction to a time range using <strong>Start Time</strong> and
+<strong>End Time</strong> (in seconds).</p>
+</section>
+<section id="step-4-annotate">
+<h2>Step 4 — Annotate<a class="headerlink" href="#step-4-annotate" title="Link to this heading"></a></h2>
+<p>Click <strong>Annotate</strong> to open the annotation interface.</p>
+<p>The screen is split into two panes:</p>
+<ul class="simple">
+<li><p><strong>Left pane</strong> — the most recently annotated frame (reference)</p></li>
+<li><p><strong>Right pane</strong> — the current frame with an editable text area</p></li>
+</ul>
+<p>Edit the text area to describe the game state, then save.
+The annotation field is <strong>plain text</strong> — use any format you like (JSON, FEN,
+a simple string, a custom array). The tool stores and exports exactly what
+you type, without parsing or validating the content.</p>
+<section id="layout-modes">
+<h3>Layout Modes<a class="headerlink" href="#layout-modes" title="Link to this heading"></a></h3>
+<p>The toolbar at the top of the annotation interface has a three-button mode
+switcher. Each mode changes how the panes are arranged:</p>
+<table class="docutils align-default">
+<thead>
+<tr class="row-odd"><th class="head"><p>Mode</p></th>
+<th class="head"><p>Layout</p></th>
+</tr>
+</thead>
+<tbody>
+<tr class="row-even"><td><p><strong>Compare</strong></p></td>
+<td><p>Reference frame on the left, current frame + annotation on the
+right, separated by a draggable vertical divider.  Best when
+you need to compare game states side-by-side.</p></td>
+</tr>
+<tr class="row-odd"><td><p><strong>Focus</strong></p></td>
+<td><p>Reference pane hidden. Current frame on the left, annotation
+editor on the right, separated by a draggable vertical divider.
+Best for fast annotation without distraction.</p></td>
+</tr>
+<tr class="row-even"><td><p><strong>Immersive</strong></p></td>
+<td><p>Reference pane hidden. Current frame on top, annotation editor
+on the bottom, separated by a draggable horizontal divider.
+Best on wide or portrait-oriented frames.</p></td>
+</tr>
+</tbody>
+</table>
+<p>The divider in every mode is draggable — grab and drag it to resize the
+image and editor areas to suit your screen. Each mode remembers its own
+split ratio between sessions (stored in browser <code class="docutils literal notranslate"><span class="pre">localStorage</span></code>).</p>
+</section>
+<section id="adjustable-features">
+<h3>Adjustable Features<a class="headerlink" href="#adjustable-features" title="Link to this heading"></a></h3>
+<dl class="simple">
+<dt><strong>Font size</strong></dt><dd><p>Both the annotation editor and the reference annotation viewer have
+<strong>A−</strong> / <strong>A+</strong> buttons to decrease or increase the font size independently.
+You can also use <code class="docutils literal notranslate"><span class="pre">Ctrl+−</span></code> and <code class="docutils literal notranslate"><span class="pre">Ctrl+=</span></code> to adjust the editor font size
+from the keyboard. Font sizes are saved in <code class="docutils literal notranslate"><span class="pre">localStorage</span></code> and restored on
+the next visit.</p>
+</dd>
+<dt><strong>Image zoom</strong></dt><dd><p>Click any frame image (or press <code class="docutils literal notranslate"><span class="pre">Z</span></code>) to open a full-screen zoom overlay.
+Inside the overlay:</p>
+<ul class="simple">
+<li><p><strong>+</strong> / <strong>−</strong> buttons zoom in and out.</p></li>
+<li><p>Click and drag the zoomed image to pan.</p></li>
+<li><p>Press <code class="docutils literal notranslate"><span class="pre">Escape</span></code> or click the <strong>×</strong> button to close.</p></li>
+</ul>
+</dd>
+</dl>
+</section>
+<section id="keyboard-shortcuts">
+<h3>Keyboard Shortcuts<a class="headerlink" href="#keyboard-shortcuts" title="Link to this heading"></a></h3>
+<table class="docutils align-default">
+<thead>
+<tr class="row-odd"><th class="head"><p>Shortcut</p></th>
+<th class="head"><p>Action</p></th>
+</tr>
+</thead>
+<tbody>
+<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">←</span></code> / <code class="docutils literal notranslate"><span class="pre">→</span></code></p></td>
+<td><p>Previous / next frame</p></td>
+</tr>
+<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">Ctrl+S</span></code></p></td>
+<td><p>Save annotation and advance to next frame</p></td>
+</tr>
+<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">Ctrl+→</span></code></p></td>
+<td><p>Skip forward 5 frames</p></td>
+</tr>
+<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">Shift+→</span></code></p></td>
+<td><p>Skip forward 10 frames</p></td>
+</tr>
+<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">Ctrl+G</span></code></p></td>
+<td><p>Jump a custom number of frames</p></td>
+</tr>
+<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">Ctrl+Z</span></code></p></td>
+<td><p>Undo last annotation edit</p></td>
+</tr>
+<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">Ctrl+=</span></code></p></td>
+<td><p>Increase annotation font size</p></td>
+</tr>
+<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">Ctrl+−</span></code></p></td>
+<td><p>Decrease annotation font size</p></td>
+</tr>
+<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">Z</span></code></p></td>
+<td><p>Open image zoom overlay</p></td>
+</tr>
+<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">Escape</span></code></p></td>
+<td><p>Close zoom overlay</p></td>
+</tr>
+</tbody>
+</table>
+</section>
+<section id="annotated-only-view">
+<h3>Annotated-Only View<a class="headerlink" href="#annotated-only-view" title="Link to this heading"></a></h3>
+<p>Click <strong>Show Annotated Only</strong> to display only frames that have been annotated.
+Useful for verification. Click again to return to the full frame list.</p>
+</section>
+</section>
+<section id="step-5-export">
+<h2>Step 5 — Export<a class="headerlink" href="#step-5-export" title="Link to this heading"></a></h2>
+<section id="per-video-export">
+<h3>Per-video export<a class="headerlink" href="#per-video-export" title="Link to this heading"></a></h3>
+<p>On the project page, click <strong>Export</strong> next to a video and choose a format:</p>
+<ul class="simple">
+<li><p><strong>JSON</strong> — array of <code class="docutils literal notranslate"><span class="pre">{frame_number,</span> <span class="pre">image_path,</span> <span class="pre">annotation}</span></code> objects</p></li>
+<li><p><strong>CSV</strong> — spreadsheet with header row</p></li>
+<li><p><strong>COCO JSON</strong> — COCO Captions-style format with <code class="docutils literal notranslate"><span class="pre">images</span></code> and <code class="docutils literal notranslate"><span class="pre">annotations</span></code> arrays</p></li>
+</ul>
+<p>The file downloads directly to your browser.</p>
+</section>
+<section id="full-project-export-zip">
+<h3>Full project export (ZIP)<a class="headerlink" href="#full-project-export-zip" title="Link to this heading"></a></h3>
+<p>Use the <strong>Export Dataset</strong> button at the top of the project page.
+Choose a format and download a ZIP containing one folder per video:</p>
+<div class="highlight-text notranslate"><div class="highlight"><pre><span></span>dataset/
+    1/
+        frame_000000.jpg
+        frame_000000.txt   ← txt format (one sidecar per image)
+    2/
+        frame_000001.jpg
+        annotations.csv    ← csv format
+        annotations_coco.json  ← coco format
+</pre></div>
+</div>
+</section>
+</section>
+</section>
+
+
+           </div>
+          </div>
+          <footer><div class="rst-footer-buttons" role="navigation" aria-label="Footer">
+        <a href="installation.html" class="btn btn-neutral float-left" title="Installation" accesskey="p" rel="prev"><span class="fa fa-arrow-circle-left" aria-hidden="true"></span> Previous</a>
+        <a href="api.html" class="btn btn-neutral float-right" title="API Reference" accesskey="n" rel="next">Next <span class="fa fa-arrow-circle-right" aria-hidden="true"></span></a>
+    </div>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>&#169; Copyright 2026, Pankaj Kumar G, Arun Kumar M N, Anitha M L.</p>
+  </div>
+
+   
+
+</footer>
+        </div>
+      </div>
+    </section>
+  </div>
+  <script>
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script> 
+
+</body>
+</html>

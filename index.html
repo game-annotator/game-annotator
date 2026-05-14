@@ -1,0 +1,160 @@
+
+
+<!DOCTYPE html>
+<html class="writer-html5" lang="en" data-content_root="./">
+<head>
+  <meta charset="utf-8" /><meta name="viewport" content="width=device-width, initial-scale=1" />
+
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>GameAnnotator Documentation &mdash; GameAnnotator 1.0.0 documentation</title>
+      <link rel="stylesheet" type="text/css" href="_static/pygments.css?v=b86133f3" />
+      <link rel="stylesheet" type="text/css" href="_static/css/theme.css?v=9edc463e" />
+
+  
+      <script src="_static/jquery.js?v=5d32c60e"></script>
+      <script src="_static/_sphinx_javascript_frameworks_compat.js?v=2cd50e6c"></script>
+      <script src="_static/documentation_options.js?v=8d563738"></script>
+      <script src="_static/doctools.js?v=fd6eb6e6"></script>
+      <script src="_static/sphinx_highlight.js?v=6ffebe34"></script>
+    <script src="_static/js/theme.js"></script>
+    <link rel="index" title="Index" href="genindex.html" />
+    <link rel="search" title="Search" href="search.html" />
+    <link rel="next" title="Installation" href="installation.html" /> 
+</head>
+
+<body class="wy-body-for-nav"> 
+  <div class="wy-grid-for-nav">
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+
+          
+          
+          <a href="#" class="icon icon-home">
+            GameAnnotator
+          </a>
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" aria-label="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+        </div><div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
+              <p class="caption" role="heading"><span class="caption-text">Contents</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="installation.html">Installation</a></li>
+<li class="toctree-l1"><a class="reference internal" href="usage.html">Usage Guide</a></li>
+<li class="toctree-l1"><a class="reference internal" href="api.html">API Reference</a></li>
+</ul>
+
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap"><nav class="wy-nav-top" aria-label="Mobile navigation menu" >
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="#">GameAnnotator</a>
+      </nav>
+
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          <div role="navigation" aria-label="Page navigation">
+  <ul class="wy-breadcrumbs">
+      <li><a href="#" class="icon icon-home" aria-label="Home"></a></li>
+      <li class="breadcrumb-item active">GameAnnotator Documentation</li>
+      <li class="wy-breadcrumbs-aside">
+            <a href="_sources/index.rst.txt" rel="nofollow"> View page source</a>
+      </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+             
+  <section id="gameannotator-documentation">
+<h1>GameAnnotator Documentation<a class="headerlink" href="#gameannotator-documentation" title="Link to this heading"></a></h1>
+<p><strong>GameAnnotator</strong> is a Django web application for annotating board game videos
+frame-by-frame. Upload a video, extract frames at a configurable rate, annotate
+each frame with a structured game state, and export the dataset in JSON, CSV, or
+COCO format.</p>
+<div class="highlight-text notranslate"><div class="highlight"><pre><span></span>Create project → Upload video → Extract frames → Annotate → Export
+</pre></div>
+</div>
+<section id="features">
+<h2>Features<a class="headerlink" href="#features" title="Link to this heading"></a></h2>
+<ul class="simple">
+<li><p><strong>Project management</strong> — organise multiple annotation projects independently</p></li>
+<li><p><strong>Video upload</strong> — supports MP4, AVI, MOV, MKV, WebM</p></li>
+<li><p><strong>Frame extraction</strong> — three algorithms: full FPS, uniform sampling, random sampling</p></li>
+<li><p><strong>Dual-pane annotation UI</strong> — previous annotated frame shown alongside the current one</p></li>
+<li><p><strong>Keyboard shortcuts</strong> — <code class="docutils literal notranslate"><span class="pre">←</span></code>/<code class="docutils literal notranslate"><span class="pre">→</span></code> navigate, <code class="docutils literal notranslate"><span class="pre">Ctrl+S</span></code> saves and advances, <code class="docutils literal notranslate"><span class="pre">Ctrl+→</span></code> skips 5, <code class="docutils literal notranslate"><span class="pre">Shift+→</span></code> skips 10</p></li>
+<li><p><strong>Annotated-only view</strong> — toggle to review only annotated frames</p></li>
+<li><p><strong>Multi-format export</strong> — JSON, CSV, and COCO Captions per video; full dataset ZIP per project</p></li>
+</ul>
+<div class="toctree-wrapper compound">
+<p class="caption" role="heading"><span class="caption-text">Contents</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="installation.html">Installation</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="installation.html#prerequisites">Prerequisites</a></li>
+<li class="toctree-l2"><a class="reference internal" href="installation.html#steps">Steps</a></li>
+<li class="toctree-l2"><a class="reference internal" href="installation.html#optional-admin-interface">Optional: Admin Interface</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="usage.html">Usage Guide</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="usage.html#annotation-workflow">Annotation Workflow</a></li>
+<li class="toctree-l2"><a class="reference internal" href="usage.html#step-1-create-a-project">Step 1 — Create a Project</a></li>
+<li class="toctree-l2"><a class="reference internal" href="usage.html#step-2-upload-a-video">Step 2 — Upload a Video</a></li>
+<li class="toctree-l2"><a class="reference internal" href="usage.html#step-3-extract-frames">Step 3 — Extract Frames</a></li>
+<li class="toctree-l2"><a class="reference internal" href="usage.html#step-4-annotate">Step 4 — Annotate</a></li>
+<li class="toctree-l2"><a class="reference internal" href="usage.html#step-5-export">Step 5 — Export</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="api.html">API Reference</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="api.html#models">Models</a></li>
+<li class="toctree-l2"><a class="reference internal" href="api.html#views">Views</a></li>
+<li class="toctree-l2"><a class="reference internal" href="api.html#forms">Forms</a></li>
+<li class="toctree-l2"><a class="reference internal" href="api.html#management-commands">Management Commands</a></li>
+<li class="toctree-l2"><a class="reference internal" href="api.html#admin">Admin</a></li>
+</ul>
+</li>
+</ul>
+</div>
+</section>
+<section id="indices">
+<h2>Indices<a class="headerlink" href="#indices" title="Link to this heading"></a></h2>
+<ul class="simple">
+<li><p><a class="reference internal" href="genindex.html"><span class="std std-ref">Index</span></a></p></li>
+<li><p><a class="reference internal" href="py-modindex.html"><span class="std std-ref">Module Index</span></a></p></li>
+</ul>
+</section>
+</section>
+
+
+           </div>
+          </div>
+          <footer><div class="rst-footer-buttons" role="navigation" aria-label="Footer">
+        <a href="installation.html" class="btn btn-neutral float-right" title="Installation" accesskey="n" rel="next">Next <span class="fa fa-arrow-circle-right" aria-hidden="true"></span></a>
+    </div>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>&#169; Copyright 2026, Pankaj Kumar G, Arun Kumar M N, Anitha M L.</p>
+  </div>
+
+   
+
+</footer>
+        </div>
+      </div>
+    </section>
+  </div>
+  <script>
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script> 
+
+</body>
+</html>
