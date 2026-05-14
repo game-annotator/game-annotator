@@ -1,9 +1,10 @@
 # GameAnnotator
 
 [![License: GPL v3](https://img.shields.io/badge/License-GPLv3-blue.svg)](LICENSE.md)
-[![License: GPL v3](https://img.shields.io/badge/License-GPLv3-blue.svg)](LICENSE.md)
 [![Python 3.8+](https://img.shields.io/badge/python-3.8+-blue.svg)](https://www.python.org/)
 [![Django](https://img.shields.io/badge/django-5.1+-green.svg)](https://www.djangoproject.com/)
+[![codecov](https://codecov.io/gh/game-annotator/game-annotator/branch/main/graph/badge.svg)](https://codecov.io/gh/game-annotator/game-annotator)
+[![Documentation](https://img.shields.io/badge/docs-online-blue.svg)](https://game-annotator.github.io/game-annotator/)
 
 A Django web application for annotating board game videos frame-by-frame.
 
