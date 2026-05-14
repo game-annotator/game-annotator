@@ -23,7 +23,7 @@ extensions = [
     'sphinx.ext.intersphinx',
 ]
 
-templates_path = ['_templates']
+templates_path = []
 exclude_patterns = ['_build']
 
 # -- Autodoc settings --------------------------------------------------------
@@ -54,7 +54,7 @@ intersphinx_mapping = {
 # -- HTML output -------------------------------------------------------------
 
 html_theme = 'sphinx_rtd_theme'
-html_static_path = ['_static']
+html_static_path = []
 html_show_sphinx = False
 html_theme_options = {
     'navigation_depth': 3,
